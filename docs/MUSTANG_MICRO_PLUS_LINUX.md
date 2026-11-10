@@ -6,7 +6,8 @@ audio from the same computer. The protocol and the commands are the same as in
 BlueZ needs.
 
 Tested on 9 November 2026 with firmware 1.1.11, BlueZ 5.87, an Intel AX201
-adapter, Python 3.13 and Bleak 3.0.2.
+adapter, Python 3.13 and Bleak 3.0.2. The BlueZ setup below was repeated on
+openSUSE Tumbleweed with a Realtek RTL8771 USB adapter (`0bda:8771`).
 
 ## Audio and control at the same time
 
@@ -33,7 +34,31 @@ Connected to Mustang Micro Plus over LE only; Bluetooth audio stays connected
 Without the bearer interface (BlueZ older than 5.84 or experimental interfaces
 off), they fall back to Bleak and warn that disconnecting will also drop audio.
 
+## Requirements
+
+- BlueZ 5.84 or later (`bluetoothctl --version`). Some distributions lag
+  behind, so update it first, for example `sudo zypper up bluez` on openSUSE
+  Tumbleweed or `sudo apt install bluez` from a recent release.
+- Python 3.11 or later with Bleak, in its own environment:
+
+  ```sh
+  python3 -m venv _work/mmp-venv
+  _work/mmp-venv/bin/pip install 'bleak==3.0.2'
+  ```
+
+  Bleak brings `dbus-fast`, which `mmp_bluez.py` uses. `run_web_cli.sh
+  --micro-plus` uses `_work/mmp-venv` unless `MANELINE_PYTHON` names another
+  interpreter.
+
+Steps 1, 3 and 4 below were still needed with BlueZ 5.87: the bearer interfaces
+and `PreferredBearer` are still experimental, and BlueZ still picks the bonded
+bearer and writes the Client Supported Features characteristic unconditionally.
+
 ## One-time BlueZ setup
+
+The examples use `hci0` and `AA:BB:CC:DD:EE:FF`. Use your adapter
+(`busctl --system tree org.bluez`) and your amp's address
+(`bluetoothctl devices`).
 
 1. Enable the experimental D-Bus interfaces, which include `Bearer.LE1`. In
    `/etc/bluetooth/main.conf`, section `[General]`:
@@ -42,9 +67,41 @@ off), they fall back to Bleak and warn that disconnecting will also drop audio.
    Experimental = true
    ```
 
-   Then `sudo systemctl restart bluetooth`.
+   Then `sudo systemctl restart bluetooth`. Some distributions, such as openSUSE
+   Tumbleweed, ship no `/etc/bluetooth/main.conf` (only an example under
+   `/usr/share/doc/packages/bluez/`). Then create it with just these two lines:
 
-2. Pair over LE as well as classic Bluetooth. If the amp was paired for audio
+   ```
+   [General]
+   Experimental = true
+   ```
+
+   Any dual-mode device known to BlueZ should now export the bearer
+   interfaces:
+
+   ```sh
+   busctl --system introspect org.bluez /org/bluez/hci0/dev_AA_BB_CC_DD_EE_FF | grep Bearer
+   ```
+
+2. Pair the amp for audio, if it is not paired yet. For pairing mode, push the
+   power switch further past ON until the LED blinks blue, then:
+
+   ```sh
+   bluetoothctl
+   [bluetooth]# power on
+   [bluetooth]# scan on          # wait for "Mustang Micro Plus", note its address
+   [bluetooth]# scan off
+   [bluetooth]# pair AA:BB:CC:DD:EE:FF
+   [bluetooth]# trust AA:BB:CC:DD:EE:FF
+   [bluetooth]# connect AA:BB:CC:DD:EE:FF
+   ```
+
+   The amp then appears as an audio output. That needs the user's PipeWire
+   (or PulseAudio) session to be running. A desktop login starts it; over SSH
+   it runs while the user's systemd instance does (`loginctl enable-linger`
+   keeps it running without a login).
+
+3. Pair over LE as well as classic Bluetooth. If the amp was paired for audio
    only, BlueZ connects it over classic Bluetooth, which has no control service.
    Pair over LE once by preferring LE while pairing:
 
@@ -56,11 +113,12 @@ off), they fall back to Bleak and warn that disconnecting will also drop audio.
    ```
 
    `bluetoothctl info` should then show both `BREDR.Bonded: yes` and
-   `LE.Bonded: yes`. Leaving the preference on `bredr` keeps a plain "Connect"
-   (for example from a desktop Bluetooth applet) connecting audio. Maneline opens
-   the LE link itself.
+   `LE.Bonded: yes`. If step 2 happened to bond over LE only, do the reverse:
+   prefer `bredr`, pair again, and leave the preference on `bredr`. That keeps
+   a plain "Connect" (for example from a desktop Bluetooth applet) connecting
+   audio. Maneline opens the LE link itself.
 
-3. Remove the Client Supported Features characteristic from BlueZ's GATT cache.
+4. Remove the Client Supported Features characteristic from BlueZ's GATT cache.
    On connecting, BlueZ writes to characteristic `0x2b29` (handle `0x0006`), and
    the amp never answers. ATT allows one outstanding request, so everything
    after it stalls: subscribing fails with `GATT Protocol Error: Unlikely Error`
@@ -68,7 +126,7 @@ off), they fall back to Bleak and warn that disconnecting will also drop audio.
    database contains it, so delete that line with bluetoothd stopped:
 
    ```sh
-   F=/var/lib/bluetooth/<adapter>/cache/AA:BB:CC:DD:EE:FF
+   F=/var/lib/bluetooth/<adapter address>/cache/AA:BB:CC:DD:EE:FF   # bluetoothctl list
    sudo systemctl stop bluetooth
    sudo cp -p $F $F.bak
    sudo sed -i '/^0005=2803:0006:0a:00002b29-/d' $F
@@ -80,10 +138,11 @@ off), they fall back to Bleak and warn that disconnecting will also drop audio.
 
 ## Scanning
 
-On the tested adapter, scanning with a service-UUID discovery filter made BlueZ
-reset the adapter within a second (`No discovery started`). The scripts
-therefore filter by service UUID only on macOS and find the amp by name on
-Linux.
+On the Intel AX201, scanning with a service-UUID discovery filter made BlueZ
+reset the adapter within a second (`No discovery started`). A Realtek RTL8771
+kept scanning with the same filter, so this depends on the adapter. The
+scripts filter by service UUID only on macOS and find the amp by name on
+Linux, which works on both.
 
 ## Saving the amp's battery
 
