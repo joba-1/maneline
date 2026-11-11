@@ -242,41 +242,25 @@ class LeBearerClient:
                         break
                     if error[0] != 'org.bluez.Error.InProgress':
                         raise RuntimeError(f'LE connection failed: {error[0]} {error[1]}'.strip())
-                    # BlueZ is still trying from an earlier attempt and adds no second
-                    # one. When the amp turns up, that attempt connects and ours adopts it.
+                    # BlueZ is still trying from an earlier attempt (ours before a
+                    # timeout, or a stopped program's) and adds no second one. When the
+                    # amp turns up, that attempt connects and ours adopts the link.
                     await asyncio.sleep(0.5)
                 self._connected = True
                 await self._discover()
                 await self._wait_for_gatt()
         except TimeoutError:
             # A paired amp is known to BlueZ while it is switched off, so this is where
-            # an absent amp shows (a scan used to tell before connecting).
-            await self._abandon()
+            # an absent amp shows (a scan used to tell before connecting). BlueZ goes on
+            # trying for a while (the kernel gives up after about 40 s) and connects if
+            # the amp turns up; the next connect waits for that attempt and adopts the link.
+            # Never take the attempt back with Device1.Disconnect: BlueZ 5.87 then keeps
+            # answering Bearer.LE1.Connect with InProgress until bluetoothd is restarted.
             await self.disconnect()
             raise RuntimeError(NO_ANSWER) from None
         except BaseException:
             await self.disconnect()
             raise
-
-    async def _abandon(self):
-        """Take back a connection attempt that got no answer.
-
-        BlueZ goes on trying after Bearer.LE1.Connect is given up, even after the caller
-        has left the bus: it refuses further attempts as InProgress, and connects when the
-        amp is switched on, with nobody left to close that link. Bearer.LE1.Disconnect does
-        not take the attempt back ("Not Connected"); Device1.Disconnect does. That one would
-        also end Bluetooth audio, so it is only used while nothing is connected at all.
-        With audio connected the attempt stays; the next connect adopts it.
-        """
-        if self._connected:
-            return                 # the link is up: disconnect() closes the LE bearer
-        try:
-            async with asyncio.timeout(2):
-                reply = await self._call(self.path, PROPERTIES, 'Get', 'ss', [DEVICE, 'Connected'])
-                if self._error(reply) or not (reply.body and reply.body[0].value):
-                    await self._call(self.path, DEVICE, 'Disconnect')
-        except TimeoutError:
-            pass
 
     async def _discover(self):
         """Wait until BlueZ exports the GATT characteristics below the device."""
