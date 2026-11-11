@@ -66,6 +66,7 @@ def signal(path, interface, member, signature, body):
                    body=body, message_type=MessageType.SIGNAL)
 
 
+SLEEP = asyncio.sleep              # the real one, while tests shorten mmp_bluez's waits
 NO_BLEAK = {'bleak': None}         # importing bleak raises ImportError
 
 
@@ -239,20 +240,48 @@ class LeBearerTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(client.is_connected)
         self.assertTrue(bus.closed)
 
-    async def test_amp_that_is_off_does_not_answer(self):
+    async def no_answer(self, answers=None):
         class SilentBus(FakeBus):
             async def call(self, message):
-                if message.member == 'Connect':
-                    await asyncio.sleep(60)
+                if message.member == 'Connect' and not self.answers.get('Connect'):
+                    self.calls.append((message.path, message.interface, message.member))
+                    await SLEEP(60)
                 return await super().call(message)
 
-        bus = SilentBus()
+        bus = SilentBus(answers)
         client = mmp_bluez.LeBearerClient(DEV, timeout=0.05)
         with patch('dbus_fast.aio.MessageBus', lambda **_: bus), \
+             patch('mmp_bluez.asyncio.sleep', lambda _: SLEEP(0.01)), \
              self.assertRaisesRegex(RuntimeError, 'Turn it on'):
             await client.connect()
         self.assertFalse(client.is_connected)
         self.assertTrue(bus.closed)
+        return bus.calls
+
+    async def test_amp_that_is_off_does_not_answer_and_the_attempt_is_taken_back(self):
+        calls = await self.no_answer()
+        self.assertEqual(calls[-3:], [(DEV, mmp_bluez.LE_BEARER, 'Connect'),
+                                      (DEV, mmp_bluez.PROPERTIES, 'Get'),
+                                      (DEV, mmp_bluez.DEVICE, 'Disconnect')])
+
+    async def test_no_answer_while_audio_is_connected_leaves_the_device_alone(self):
+        calls = await self.no_answer({'Get': [reply([Variant('b', True)])]})
+        self.assertNotIn(mmp_bluez.DEVICE, [interface for _, interface, _ in calls])
+        self.assertNotIn((DEV, mmp_bluez.LE_BEARER, 'Disconnect'), calls)
+
+    async def test_pending_attempt_is_waited_for_and_adopted(self):
+        pending = reply(error='org.bluez.Error.InProgress')
+        connected = reply(error='org.bluez.Error.AlreadyConnected')
+        with patch('mmp_bluez.asyncio.sleep', lambda _: SLEEP(0)):
+            client, bus = await self.connected({'Connect': [pending, pending, connected],
+                                                'GetManagedObjects': [managed_objects()]})
+        self.assertTrue(client.is_connected)
+        self.assertEqual(bus.calls.count((DEV, mmp_bluez.LE_BEARER, 'Connect')), 3)
+        self.assertNotIn(mmp_bluez.DEVICE, [interface for _, interface, _ in bus.calls])
+
+    async def test_pending_attempt_that_never_connects_does_not_answer(self):
+        calls = await self.no_answer({'Connect': [reply(error='org.bluez.Error.InProgress')] * 99})
+        self.assertEqual(calls[-1], (DEV, mmp_bluez.DEVICE, 'Disconnect'))
 
     async def test_disconnect_closes_le_and_never_the_device(self):
         client, bus = await self.connected({'GetManagedObjects': [managed_objects()]})
