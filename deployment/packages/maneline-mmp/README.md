@@ -37,6 +37,6 @@ as root installs the same files without a package.
   `Package:` in `debian/control`, the first line of `debian/changelog`, the directory in
   `debian/rules`, and `filename` in `_service`. The installed paths (`/usr/share/maneline-mmp`)
   are in `install.sh` only; a program of the same name as the package is not installed.
-* Known limit: Debian 13 and Raspberry Pi OS 13 ship BlueZ 5.82, which lacks the LE bearer
-  interface (`org.bluez.Bearer.LE1`, BlueZ 5.84). The package installs there, but the
-  programs need a newer BlueZ to connect.
+* Known limit: openSUSE Leap 16.0 ships BlueZ 5.79, Debian 13 and Raspberry Pi OS 13 ship 5.82, which lack the LE bearer
+  interface (`org.bluez.Bearer.LE1`, BlueZ 5.84). The package installs there (no versioned
+  requirement on BlueZ, except on Arch), but the programs need a newer BlueZ to connect.
