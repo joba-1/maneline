@@ -10,7 +10,7 @@ license=('GPL-2.0-only AND MIT AND OFL-1.1 AND Apache-2.0')
 depends=('python>=3.11' 'python-dbus-fast' 'bluez>=5.84')
 checkdepends=('python-numpy')
 optdepends=('python-numpy: mmp-level, analysis'
-            'pipewire: mmp-level, recording (pw-record)'
+            'pipewire-audio: mmp-level, recording (pw-record)'
             'libpulse: mmp-level, finding the amp (pactl)')
 source=("$pkgname-$pkgver.tar.xz")
 sha256sums=('SKIP')
