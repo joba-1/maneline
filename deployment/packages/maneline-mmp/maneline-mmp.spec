@@ -17,9 +17,9 @@ BuildArch:      noarch
 BuildRequires:  python3 >= 3.11
 BuildRequires:  python3-dbus_fast
 BuildRequires:  python3-numpy
-# Needs BlueZ 5.84 at run time (the programs say so). Not a versioned requirement:
-# Leap 16.0 ships 5.79, and the package shall install there for a newer BlueZ from elsewhere.
-Requires:       bluez
+# Leap 16.0 and 16.1 ship an older BlueZ; the project that builds this package
+# builds a current one for them (a link to Base:System/bluez).
+Requires:       bluez >= 5.84
 Requires:       python3 >= 3.11
 Requires:       python3-dbus_fast
 # mmp-level: analysis, finding the amp's audio devices, recording
@@ -40,8 +40,6 @@ checks the amp after a firmware update; mmp-level measures preset loudness.
 Needs BlueZ 5.84 or newer with "Experimental = true" in
 /etc/bluetooth/main.conf and the amp paired over LE: see
 MUSTANG_MICRO_PLUS_LINUX.md in the documentation.
-openSUSE Leap 16.0 ships BlueZ 5.79: the programs install but report that
-BlueZ is too old until a newer one is installed.
 
 The rest of maneline (the Mustang LT amplifiers over USB, the Android and
 desktop apps) is not part of this package.
