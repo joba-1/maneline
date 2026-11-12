@@ -19,7 +19,7 @@ BuildRequires:  python3-dbus_fast
 BuildRequires:  python3-numpy
 # Leap 16.0 and 16.1 ship an older BlueZ; the project that builds this package
 # builds a current one for them (a link to Base:System/bluez).
-Requires:       bluez >= 5.84
+Requires:       bluez >= 5.86
 Requires:       python3 >= 3.11
 Requires:       python3-dbus_fast
 # mmp-level: analysis, finding the amp's audio devices, recording
@@ -37,7 +37,7 @@ connection the amp allows; mmp-backup and mmp-restore save and write back
 the amp's presets; mmp-audition tries a preset without storing it; mmp-check
 checks the amp after a firmware update; mmp-level measures preset loudness.
 
-Needs BlueZ 5.84 or newer with "Experimental = true" in
+Needs BlueZ 5.86 or newer with "Experimental = true" in
 /etc/bluetooth/main.conf and the amp paired over LE: see
 MUSTANG_MICRO_PLUS_LINUX.md in the documentation.
 

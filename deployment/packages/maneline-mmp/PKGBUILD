@@ -7,7 +7,7 @@ pkgdesc="Tools for the Fender Mustang Micro Plus over Bluetooth LE"
 arch=('any')
 url="https://github.com/tim-littlefair/maneline"
 license=('GPL-2.0-only AND MIT AND OFL-1.1 AND Apache-2.0')
-depends=('python>=3.11' 'python-dbus-fast' 'bluez>=5.84')
+depends=('python>=3.11' 'python-dbus-fast' 'bluez>=5.86')
 checkdepends=('python-numpy')
 optdepends=('python-numpy: mmp-level, analysis'
             'pipewire-audio: mmp-level, recording (pw-record)'

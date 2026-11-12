@@ -2,7 +2,7 @@
 
 The package `maneline-mmp` contains only maneline's Mustang Micro Plus programs
 (`scripts/mmp_*.py`), the browser page `mmp_web.py` serves and the Micro Plus
-documents. It needs Python 3.11+, `dbus-fast` and BlueZ 5.84+, all taken from the
+documents. It needs Python 3.11+, `dbus-fast` and BlueZ 5.86+, all taken from the
 distribution: no venv, no `bleak` on Linux.
 
 | File | For |
@@ -38,7 +38,7 @@ as root installs the same files without a package.
   `debian/rules`, and `filename` in `_service`. The installed paths (`/usr/share/maneline-mmp`)
   are in `install.sh` only; a program of the same name as the package is not installed.
 * BlueZ: openSUSE Leap 16.0 and 16.1 ship 5.79 and 5.82, which lack the LE bearer interface
-  (`org.bluez.Bearer.LE1`, BlueZ 5.84). The OBS project therefore also builds `bluez` for
+  (`org.bluez.Bearer.LE1`, BlueZ 5.86). The OBS project therefore also builds `bluez` for
   Leap, as a link to openSUSE's devel package `Base:System/bluez`, and the RPM requires
-  `bluez >= 5.84`. Debian 13 and Raspberry Pi OS 13 ship 5.82 and have no newer build: the
+  `bluez >= 5.86`. Debian 13 and Raspberry Pi OS 13 ship 5.82 and have no newer build: the
   package installs there (no versioned requirement), but the programs cannot connect.
