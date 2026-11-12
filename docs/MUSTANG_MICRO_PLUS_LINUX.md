@@ -50,6 +50,18 @@ Bleak, which would drop audio on every disconnect.
 
 ## One-time BlueZ setup
 
+Steps 2 and 3 below are automated by `scripts/bluez_setup.sh` (from a package:
+`mmp-bluez-setup`); it also checks step 1. Run it as root, with the amp switched on:
+
+```sh
+sudo scripts/bluez_setup.sh AA:BB:CC:DD:EE:FF            # your amp's address
+```
+
+It stops and starts bluetoothd once, so every Bluetooth device reconnects. If
+`/var/lib/bluetooth` has more than one adapter directory (also one left over from
+a former adapter), give the adapter's address as second argument. It assumes the
+adapter is `hci0`.
+
 1. Enable the experimental D-Bus interfaces, which include `Bearer.LE1`. In
    `/etc/bluetooth/main.conf`, section `[General]`:
 

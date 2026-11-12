@@ -14,7 +14,7 @@ distribution: no venv, no `bleak` on Linux.
 
 Installed layout: `/usr/share/maneline-mmp/scripts`, `/usr/share/maneline-mmp/web_ui`,
 commands `mmp-web`, `mmp-ble`, `mmp-backup`, `mmp-restore`, `mmp-audition`, `mmp-check`,
-`mmp-level` in `/usr/bin`, the documents in the package's doc directory. Backups go to
+`mmp-level` and `mmp-bluez-setup` (`scripts/bluez_setup.sh`, the one-time BlueZ setup) in `/usr/bin`, the documents in the package's doc directory. Backups go to
 `~/.local/share/maneline-mmp/backups` unless `--out` or `MMP_WORK_DIR` says otherwise.
 
 ## How it is built

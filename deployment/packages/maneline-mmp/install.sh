@@ -6,7 +6,8 @@
 #
 # Layout: /usr/share/maneline-mmp/scripts (the mmp_*.py programs),
 # /usr/share/maneline-mmp/web_ui (the browser page mmp_web.py serves),
-# /usr/bin/mmp-<name> for each program, the documents in DOCDIR
+# /usr/bin/mmp-<name> for each program and mmp-bluez-setup (scripts/bluez_setup.sh),
+# the documents in DOCDIR
 # (default /usr/share/doc/maneline-mmp).
 set -eu
 dest=${1:?usage: install.sh DESTDIR [DOCDIR]}
@@ -26,6 +27,9 @@ for f in scripts/mmp_*.py; do
     printf '#!/bin/sh\nexec python3 /usr/share/maneline-mmp/scripts/%s.py "$@"\n' "$name" > "$cmd"
     chmod 755 "$cmd"
 done
+# the one-time BlueZ setup for an amp (LE pairing, GATT cache), run as root
+install -m 755 scripts/bluez_setup.sh "$share/scripts/"
+ln -s ../share/maneline-mmp/scripts/bluez_setup.sh "$dest/usr/bin/mmp-bluez-setup"
 install -m 644 web-app/web_ui/micro-plus.html "$share/web_ui/"
 install -m 644 web-app/web_ui/_static/micro-plus.js web-app/web_ui/_static/style-font.css \
     web-app/web_ui/_static/maneline-icon-512x512.png "$share/web_ui/_static/"
