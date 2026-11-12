@@ -15,9 +15,13 @@ share=$dest/usr/share/maneline-mmp
 
 install -d "$share/scripts" "$share/web_ui/_static" "$dest/usr/bin" "$dest$docdir"
 for f in scripts/mmp_*.py; do
-    install -m 644 "$f" "$share/scripts/"
     name=$(basename "$f" .py)
-    grep -q "^if __name__ == '__main__'" "$f" || grep -q '^if __name__ == "__main__"' "$f" || continue
+    # modules are imported; programs (those with a main part) get a command
+    if ! grep -q '^if __name__ == .__main__.' "$f"; then
+        install -m 644 "$f" "$share/scripts/"
+        continue
+    fi
+    install -m 755 "$f" "$share/scripts/"
     cmd=$dest/usr/bin/$(echo "$name" | tr _ -)
     printf '#!/bin/sh\nexec python3 /usr/share/maneline-mmp/scripts/%s.py "$@"\n' "$name" > "$cmd"
     chmod 755 "$cmd"
